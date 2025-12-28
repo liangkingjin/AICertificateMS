@@ -1,0 +1,184 @@
+{% extends 'admin/model/list.html' %}
+
+{# 
+Flask-Admin 列表页中文汉化
+覆盖Flask-Admin默认的list.html模板 
+#}
+
+{% block list_header %}
+    <tr>
+        <th class="checkbox-column" style="width: 40px; text-align: center;">
+            <input type="checkbox" id="select_all" title="全选/取消全选">
+        </th>
+        <th class="serial-column">序号</th>
+        {% for c, name in list_columns %}
+            {% if admin_view.is_sortable(c) %}
+                <th class="column-header col-{{c}}">
+                    <a href='{{ admin_view.get_url('.index_view', sort=c, page=request.args.get('page', 1)) }}'>
+                        {{ name }}<span class="fa fa-sort"></span>
+                    </a>
+                </th>
+            {% else %}
+                <th class="column-header col-{{c}}">
+                    {{ name }}
+                </th>
+            {% endif %}
+        {% endfor %}
+        {% if admin_view.can_edit %}
+            <th class="col-md-1">{{ _gettext('Edit') }}</th>
+        {% endif %}
+        {% if admin_view.can_delete %}
+            <th class="col-md-1">{{ _gettext('Delete') }}</th>
+        {% endif %}
+    </tr>
+{% endblock %}
+
+{% block list_row scoped %}
+    <tr>
+        <td class="checkbox-column" style="text-align: center;">
+            <input type="checkbox" name="rowid" value="{{ get_pk_value(row) }}" class="row-checkbox">
+        </td>
+        <td class="serial-column">{{ loop.index }}</td>
+        {% for c, name in list_columns %}
+            <td class="col-{{c}}">
+            {% if admin_view.is_editable(c) %}
+                {% if list_forms %}
+                    {% set row_index = loop.index0 %}
+                    {% if list_forms is iterable and list_forms is not string %}
+                        {% if row_index < list_forms|length %}
+                            {% set form = list_forms[row_index] %}
+                            {% if form and form.csrf_token %}
+                                {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                            {% elif form %}
+                                {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                            {% else %}
+                                {{ get_value(row, c) }}
+                            {% endif %}
+                        {% else %}
+                            {{ get_value(row, c) }}
+                        {% endif %}
+                    {% else %}
+                        {{ get_value(row, c) }}
+                    {% endif %}
+                {% else %}
+                    {{ get_value(row, c) }}
+                {% endif %}
+            {% else %}
+                {{ get_value(row, c) }}
+            {% endif %}
+            </td>
+        {% endfor %}
+        {% if admin_view.can_edit %}
+            <td class="col-md-1">
+                <a href="{{ admin_view.get_url('.edit_view', id=get_pk_value(row), url=return_url) }}" title="{{ _gettext('Edit') }}"><i class="fa fa-pencil glyphicon glyphicon-pencil"></i></a>
+            </td>
+        {% endif %}
+        {% if admin_view.can_delete %}
+            <td class="col-md-1">
+                <form class="icon" method="POST" action="{{ admin_view.get_url('.delete_view') }}" onsubmit="return confirm('确定要删除这条记录吗？删除后将无法恢复！')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="id" value="{{ get_pk_value(row) }}"/>
+                    <input type="hidden" name="url" value="{{ return_url }}"/>
+                    <button type="submit" class="btn btn-sm btn-danger" title="{{ _gettext('Delete') }}">
+                        <i class="fa fa-trash glyphicon glyphicon-trash"></i>
+                    </button>
+                </form>
+            </td>
+        {% endif %}
+    </tr>
+{% endblock %}
+
+{% block tail %}
+{{ super() }}
+
+<script>
+$(document).ready(function() {
+    // 全选/取消全选功能
+    $('#select_all').on('change', function() {
+        $('.row-checkbox').prop('checked', this.checked);
+    });
+
+    // 点击某一行时切换该行复选框状态
+    $('tbody tr').on('click', function(e) {
+        if (e.target.type !== 'checkbox') {
+            var checkbox = $(this).find('.row-checkbox');
+            checkbox.prop('checked', !checkbox.prop('checked'));
+        }
+    });
+
+    function translateFlaskAdmin() {
+        var translations = {
+            // 导航和按钮
+            'List': '列表',
+            'Create': '新建',
+            'Add Filter': '添加筛选',
+            'With selected': '批量操作',
+            'Search': '搜索',
+            'Apply': '应用',
+            'Reset': '重置',
+            'Reset Filters': '重置筛选',
+            'Export': '导出',
+            'Edit': '编辑',
+            'Delete': '删除',
+            'Save': '保存',
+            'Cancel': '取消',
+            'Yes': '是',
+            'No': '否',
+            'None': '无',
+            'True': '是',
+            'False': '否',
+            // X items
+            'items': '条',
+            // 筛选条件
+            'equals': '等于',
+            'not equal': '不等于',
+            'contains': '包含',
+            'not contains': '不包含',
+            'empty': '为空',
+            'not empty': '不为空',
+            'in list': '在列表中',
+            'not in list': '不在列表中',
+            'greater than': '大于',
+            'smaller than': '小于',
+            'between': '介于',
+            'not between': '不介于'
+        };
+
+        $('a, button, .btn, .nav-link, th').each(function() {
+            var $el = $(this);
+            var html = $el.html();
+            if (html) {
+                var changed = false;
+                for (var eng in translations) {
+                    if (html.indexOf(eng) !== -1) {
+                        html = html.split(eng).join(translations[eng]);
+                        changed = true;
+                    }
+                }
+                if (changed) $el.html(html);
+            }
+        });
+    }
+
+    // 多次执行确保动态内容也被翻译
+    setTimeout(translateFlaskAdmin, 50);
+    setTimeout(translateFlaskAdmin, 200);
+    setTimeout(translateFlaskAdmin, 500);
+});
+</script>
+
+<style>
+.checkbox-column {
+    width: 40px;
+    text-align: center;
+}
+.serial-column {
+    width: 60px;
+    text-align: center;
+    font-weight: bold;
+}
+tbody tr {
+    cursor: pointer;
+}
+</style>
+{% endblock %}

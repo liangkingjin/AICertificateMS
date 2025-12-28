@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>注册 - 证书管理系统</title>
+
+        <!-- Local Static Resources -->
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/fontawesome.min.css') }}">
+        <!-- AdminLTE 3 CSS -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/adminlte.min.css') }}">
+        <!-- Select2 -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/select2.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/select2-bootstrap4.min.css') }}">
+    </head>
+
+    <body class="hold-transition register-page">
+        <div class="register-box">
+            <div class="card card-outline card-primary">
+                <div class="card-header text-center">
+                    <a href="#" class="h1">
+                        <i class="fas fa-certificate text-warning"></i>
+                        <b>证书</b>管理系统
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p class="login-box-msg">注册新账号</p>
+
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    {% for category, message in messages %}
+                    <div
+                        class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+
+                    <form action="{{ url_for('auth.register') }}" method="post">
+                        {{ form.hidden_tag() }}
+
+                        <div class="input-group mb-3">
+                            {{ form.account_id(class="form-control", placeholder="学（工）号") }}
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-id-card"></span>
+                                </div>
+                            </div>
+                        </div>
+                        {% if form.account_id.errors %}
+                        <div class="text-danger mb-2" style="font-size: 0.875rem;">
+                            {% for error in form.account_id.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="input-group mb-3">
+                            {{ form.name(class="form-control", placeholder="姓名") }}
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-user"></span>
+                                </div>
+                            </div>
+                        </div>
+                        {% if form.name.errors %}
+                        <div class="text-danger mb-2" style="font-size: 0.875rem;">
+                            {% for error in form.name.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="input-group mb-3">
+                            {{ form.role(class="form-control") }}
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-user-tag"></span>
+                                </div>
+                            </div>
+                        </div>
+                        {% if form.role.errors %}
+                        <div class="text-danger mb-2" style="font-size: 0.875rem;">
+                            {% for error in form.role.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="form-group mb-3">
+                            {{ form.department(class="form-control select2", style="width: 100%;") }}
+                        </div>
+                        {% if form.department.errors %}
+                        <div class="text-danger mb-2" style="font-size: 0.875rem;">
+                            {% for error in form.department.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="input-group mb-3">
+                            {{ form.email(class="form-control", placeholder="邮箱") }}
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-envelope"></span>
+                                </div>
+                            </div>
+                        </div>
+                        {% if form.email.errors %}
+                        <div class="text-danger mb-2" style="font-size: 0.875rem;">
+                            {% for error in form.email.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="input-group mb-3">
+                            {{ form.password(class="form-control", placeholder="密码（至少8位）") }}
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-lock"></span>
+                                </div>
+                            </div>
+                        </div>
+                        {% if form.password.errors %}
+                        <div class="text-danger mb-2" style="font-size: 0.875rem;">
+                            {% for error in form.password.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="input-group mb-3">
+                            {{ form.confirm_password(class="form-control", placeholder="确认密码") }}
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-lock"></span>
+                                </div>
+                            </div>
+                        </div>
+                        {% if form.confirm_password.errors %}
+                        <div class="text-danger mb-2" style="font-size: 0.875rem;">
+                            {% for error in form.confirm_password.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="input-group mb-3">
+                            {{ form.advisor_id(class="form-control", placeholder="指导老师工号（学生可选填）") }}
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-chalkboard-teacher"></span>
+                                </div>
+                            </div>
+                        </div>
+                        {% if form.advisor_id.errors %}
+                        <div class="text-danger mb-2" style="font-size: 0.875rem;">
+                            {% for error in form.advisor_id.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-12">
+                                {{ form.submit(class="btn btn-primary btn-block") }}
+                            </div>
+                        </div>
+                    </form>
+
+                    <p class="mb-0 mt-3">
+                        <a href="{{ url_for('auth.login') }}" class="text-center">
+                            已有账号？立即登录
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Local Static Resources -->
+        <!-- jQuery -->
+        <script src="{{ url_for('static', filename='vendor/js/jquery.min.js') }}"></script>
+        <!-- Bootstrap 4 -->
+        <script src="{{ url_for('static', filename='vendor/js/bootstrap.bundle.min.js') }}"></script>
+        <!-- Select2 -->
+        <script src="{{ url_for('static', filename='vendor/js/select2.min.js') }}"></script>
+        <!-- AdminLTE App -->
+        <script src="{{ url_for('static', filename='vendor/js/adminlte.min.js') }}"></script>
+
+        <script>
+            $(function () {
+                $('.select2').select2({
+                    theme: 'bootstrap4',
+                    placeholder: '请选择单位'
+                });
+            });
+        </script>
+    </body>
+
+</html>

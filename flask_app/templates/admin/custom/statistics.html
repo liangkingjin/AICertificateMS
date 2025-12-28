@@ -1,0 +1,295 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}统计分析 - 证书管理系统{% endblock %}
+
+{% block page_title %}统计分析{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">统计分析</li>
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    <!-- 统计数字概览 -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ stats.total_certificates }}</h3>
+                <p>证书总数</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-certificate"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ stats.submitted_certificates }}</h3>
+                <p>已提交证书</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ stats.total_students }}</h3>
+                <p>学生人数</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>{{ stats.total_teachers }}</h3>
+                <p>教师人数</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 按学院统计 -->
+    <div class="col-md-6">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-building"></i> 各学院证书数量</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="deptChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 按类别统计 -->
+    <div class="col-md-6">
+        <div class="card card-success">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-tags"></i> 获奖类别分布</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 按等级统计 -->
+    <div class="col-md-6">
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-medal"></i> 获奖等级分布</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="levelChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 按类型统计 -->
+    <div class="col-md-6">
+        <div class="card card-warning">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-trophy"></i> 竞赛类型分布</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="typeChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 详细数据表格 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-table"></i> 学院详细统计</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered table-striped datatable" data-manual-init>
+                    <thead>
+                        <tr>
+                            <th>学院</th>
+                            <th>证书总数</th>
+                            <th>学生人数</th>
+                            <th>人均证书</th>
+                            <th>国家级</th>
+                            <th>省级</th>
+                            <th>其他</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept in stats.by_department %}
+                        <tr>
+                            <td>{{ dept.name }}</td>
+                            <td>{{ dept.total }}</td>
+                            <td>{{ dept.students }}</td>
+                            <td>{{ (dept.total / dept.students)|round(2) if dept.students else 0 }}</td>
+                            <td>{{ dept.national }}</td>
+                            <td>{{ dept.provincial }}</td>
+                            <td>{{ dept.other }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 月度趋势 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card card-secondary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-chart-line"></i> 月度证书提交趋势</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+<script>
+    // 颜色配置
+    var colors = {
+        primary: 'rgba(0, 123, 255, 0.8)',
+        success: 'rgba(40, 167, 69, 0.8)',
+        warning: 'rgba(255, 193, 7, 0.8)',
+        danger: 'rgba(220, 53, 69, 0.8)',
+        info: 'rgba(23, 162, 184, 0.8)',
+        secondary: 'rgba(108, 117, 125, 0.8)',
+        purple: 'rgba(111, 66, 193, 0.8)',
+        pink: 'rgba(232, 62, 140, 0.8)'
+    };
+
+    var colorArray = Object.values(colors);
+
+    // 学院统计图表
+    var deptData = {{ stats.dept_data| tojson | safe if stats.dept_data else '{"labels":[],"data":[]}' }};
+    new Chart(document.getElementById('deptChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: deptData.labels || [],
+            datasets: [{
+                label: '证书数量',
+                data: deptData.data || [],
+                backgroundColor: colorArray
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // 类别统计图表
+    var categoryData = {{ stats.category_data| tojson | safe if stats.category_data else '{"labels":[],"data":[]}' }};
+    new Chart(document.getElementById('categoryChart').getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: categoryData.labels || [],
+            datasets: [{
+                data: categoryData.data || [],
+                backgroundColor: colorArray
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    // 等级统计图表
+    var levelData = {{ stats.level_data| tojson | safe if stats.level_data else '{"labels":[],"data":[]}' }};
+    new Chart(document.getElementById('levelChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: levelData.labels || [],
+            datasets: [{
+                data: levelData.data || [],
+                backgroundColor: colorArray
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    // 类型统计图表
+    var typeData = {{ stats.type_data| tojson | safe if stats.type_data else '{"labels":[],"data":[]}' }};
+    new Chart(document.getElementById('typeChart').getContext('2d'), {
+        type: 'polarArea',
+        data: {
+            labels: typeData.labels || [],
+            datasets: [{
+                data: typeData.data || [],
+                backgroundColor: colorArray
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    // 月度趋势图表
+    var trendData = {{ stats.trend_data| tojson | safe if stats.trend_data else '{"labels":[],"data":[]}' }};
+    new Chart(document.getElementById('trendChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: trendData.labels || [],
+            datasets: [{
+                label: '提交数量',
+                data: trendData.data || [],
+                borderColor: colors.primary,
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // DataTable 初始化
+    $(function () {
+        $('.datatable').DataTable({
+            "language": {
+                "url": "{{ url_for('static', filename='vendor/i18n/dataTables.zh.json') }}"
+            },
+            "order": [[1, "desc"]]
+        });
+    });
+</script>
+{% endblock %}

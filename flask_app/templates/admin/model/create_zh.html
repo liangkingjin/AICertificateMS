@@ -1,0 +1,44 @@
+{% extends 'admin/model/create.html' %}
+
+{# Flask-Admin 新建页中文汉化 #}
+
+{% block tail %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    function translateFlaskAdmin() {
+        var translations = {
+            'List': '列表',
+            'Create': '新建',
+            'Save': '保存',
+            'Cancel': '取消',
+            'Save and Add Another': '保存并继续添加',
+            'Save and Continue Editing': '保存并继续编辑',
+            'Yes': '是',
+            'No': '否',
+            'None': '无',
+            'True': '是',
+            'False': '否'
+        };
+        
+        $('a, button, .btn, .nav-link').each(function() {
+            var $el = $(this);
+            var html = $el.html();
+            if (html) {
+                var changed = false;
+                for (var eng in translations) {
+                    if (html.indexOf(eng) !== -1) {
+                        html = html.split(eng).join(translations[eng]);
+                        changed = true;
+                    }
+                }
+                if (changed) $el.html(html);
+            }
+        });
+    }
+    
+    setTimeout(translateFlaskAdmin, 50);
+    setTimeout(translateFlaskAdmin, 200);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+# Flask 证书管理系统依赖
+# 安装命令: pip install -r requirements.txt
+
+# Flask 核心
+Flask>=3.0.0
+Flask-SQLAlchemy>=3.1.0
+Flask-Login>=0.6.0
+Flask-WTF>=1.2.0
+Flask-Admin>=1.6.1
+Flask-Migrate>=4.0.0
+Flask-Babel>=4.0.0
+
+# 数据库
+SQLAlchemy>=2.0.0
+
+# 数据验证
+pydantic>=2.0.0
+email-validator>=2.0.0
+
+# 密码加密
+bcrypt>=4.1.0
+
+# 文件处理
+openpyxl>=3.1.0
+pandas>=2.0.0
+Pillow>=10.0.0
+pdf2image>=1.16.0
+pymupdf>=1.23.0
+tablib>=3.0.0
+
+# AI 识别
+zhipuai>=2.0.0
+zai-sdk>=0.2.0
+
+# 工具
+python-dotenv>=1.0.0
+Werkzeug>=3.0.0
+
+# 可选: 生产环境
+# gunicorn>=21.0.0
+# gevent>=23.0.0
+

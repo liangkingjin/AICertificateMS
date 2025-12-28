@@ -1,0 +1,373 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}上传证书 - 证书管理系统{% endblock %}
+
+{% block page_title %}上传证书{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="#">证书管理</a></li>
+<li class="breadcrumb-item active">上传证书</li>
+{% endblock %}
+
+{% block head_css %}
+<style>
+    /* Loading 遮罩层 */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .loading-content {
+        text-align: center;
+        color: white;
+    }
+    .loading-spinner {
+        width: 80px;
+        height: 80px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #28a745;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .loading-text {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .loading-subtext {
+        font-size: 14px;
+        color: #ccc;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Loading 遮罩层 -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">正在处理中...</div>
+        <div class="loading-subtext" id="loadingSubtext">请稍候，即将完成</div>
+    </div>
+</div>
+
+<!-- 截止时间提示 -->
+{% if deadline %}
+<div class="alert alert-info alert-dismissible fade show mb-3">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <i class="fas fa-clock"></i> <strong>证书提交截止时间：</strong>{{ deadline }}
+    {% if is_overdue %}
+    <span class="badge badge-danger ml-2">已截止</span>
+    {% else %}
+    <span class="badge badge-success ml-2">可提交</span>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- 左侧：上传区域 -->
+    <div class="col-md-5">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-upload"></i> 上传证书文件</h3>
+            </div>
+            <div class="card-body">
+                {% if not extracted_info and not file_path %}
+                <!-- 上传表单 -->
+                <form id="uploadForm" action="{{ url_for('cert_upload.index') }}" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="upload">
+
+                    <div class="form-group">
+                        <label for="certificate_file">选择证书文件</label>
+                        <div class="input-group">
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="certificate_file"
+                                    name="certificate_file" accept=".jpg,.jpeg,.png,.bmp,.gif,.webp" required>
+                                <label class="custom-file-label" for="certificate_file">选择文件...</label>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">
+                            支持格式：JPG、JPEG、PNG、BMP、GIF、WEBP，最大10MB<br>
+                            <span class="text-warning"><i class="fas fa-exclamation-triangle"></i> PDF文件请先转换为图片再上传</span>
+                        </small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-cloud-upload-alt"></i> 上传文件
+                    </button>
+                </form>
+                {% else %}
+                <!-- 文件已上传，显示预览和AI识别按钮 -->
+                <div class="file-preview text-center mb-3">
+                    {% if existing_cert %}
+                    {# 秒传成功，使用API路由预览 #}
+                    <img src="{{ url_for('api.get_certificate_file', cert_id=existing_cert.cert_id) }}"
+                        alt="证书预览" class="img-fluid" style="max-height: 300px;">
+                    {% elif file_path %}
+                    {# 新上传文件，使用安全API路由 #}
+                    {% set relative_path = file_path.split('uploads')[-1].lstrip('\\').lstrip('/') if 'uploads' in file_path else '' %}
+                    <img src="{{ url_for('api.get_uploaded_file', file_path=relative_path) if relative_path else '#' }}"
+                        alt="证书预览" class="img-fluid" style="max-height: 300px;">
+                    {% endif %}
+                </div>
+
+                {% if not extracted_info %}
+                <!-- AI识别按钮 -->
+                <form id="extractForm" action="{{ url_for('cert_upload.index') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="extract">
+                    <input type="hidden" name="file_path" value="{{ file_path }}">
+                    <input type="hidden" name="file_md5" value="{{ file_md5 }}">
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fas fa-robot"></i> AI识别证书信息
+                    </button>
+                </form>
+                {% endif %}
+
+                <!-- 重新上传 -->
+                <a href="{{ url_for('cert_upload.index') }}" class="btn btn-secondary btn-block mt-2">
+                    <i class="fas fa-redo"></i> 重新上传
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 提示信息 -->
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-info-circle"></i> 使用说明</h3>
+            </div>
+            <div class="card-body">
+                <ol class="pl-3">
+                    <li>上传证书图片文件（支持 JPG、PNG、BMP、GIF、WEBP）</li>
+                    <li>点击"AI识别"自动提取信息</li>
+                    <li>核对并修改识别结果</li>
+                    <li>选择保存为草稿或直接提交</li>
+                </ol>
+                <p class="text-warning mb-0">
+                    <i class="fas fa-info-circle"></i> PDF文件请使用截图工具转换为图片后上传
+                </p>
+                <p class="text-success mb-0 mt-2">
+                    <i class="fas fa-bolt"></i> 支持秒传：相同文件无需重复上传和识别
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：信息表单 -->
+    <div class="col-md-7">
+        <div class="card card-success">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-edit"></i> 证书信息</h3>
+            </div>
+            <form action="{{ url_for('cert_upload.index') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="save">
+                <input type="hidden" name="file_path" value="{{ file_path or '' }}">
+                <input type="hidden" name="file_md5" value="{{ file_md5 or '' }}">
+                {% if existing_cert %}
+                <input type="hidden" name="existing_cert_id" value="{{ existing_cert.cert_id }}">
+                {% endif %}
+
+                <div class="card-body">
+                    {% if is_quick_upload %}
+                    <div class="alert {% if can_edit %}alert-info{% else %}alert-warning{% endif %}">
+                        <i class="fas fa-bolt"></i> 秒传成功！已加载之前上传的证书信息
+                        {% if not can_edit %}
+                        <br><small><i class="fas fa-lock"></i> 当前证书状态下不可编辑，仅可查看</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="student_id">学号 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="student_id" name="student_id"
+                                    value="{{ extracted_info.student_id if extracted_info else '' }}"
+                                    {% if is_quick_upload and not can_edit %}readonly{% endif %} required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="student_name">学生姓名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="student_name" name="student_name"
+                                    value="{{ extracted_info.student_name if extracted_info else '' }}"
+                                    {% if is_quick_upload and not can_edit %}readonly{% endif %} required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="department">学院 <span class="text-danger">*</span></label>
+                        <select class="form-control select2" id="department" name="department" required {% if is_quick_upload and not can_edit %}disabled{% endif %}>
+                            {% for value, label in colleges %}
+                            <option value="{{ value }}" {% if extracted_info and
+                                extracted_info.student_department==value %}selected{% endif %} {% if extracted_info and
+                                extracted_info.department==value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="competition_name">竞赛项目 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="competition_name" name="competition_name"
+                            value="{{ extracted_info.competition_name if extracted_info else '' }}" required {% if is_quick_upload and not can_edit %}readonly{% endif %}>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="award_category">获奖类别 <span class="text-danger">*</span></label>
+                                <select class="form-control" id="award_category" name="award_category" required {% if is_quick_upload and not can_edit %}disabled{% endif %}>
+                                    {% for value, label in categories %}
+                                    <option value="{{ value }}" {% if extracted_info and
+                                        extracted_info.award_category==value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="award_level">获奖等级 <span class="text-danger">*</span></label>
+                                <select class="form-control" id="award_level" name="award_level" required {% if is_quick_upload and not can_edit %}disabled{% endif %}>
+                                    {% for value, label in levels %}
+                                    <option value="{{ value }}" {% if extracted_info and
+                                        extracted_info.award_level==value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="competition_type">竞赛类型 <span class="text-danger">*</span></label>
+                                <select class="form-control" id="competition_type" name="competition_type" required {% if is_quick_upload and not can_edit %}disabled{% endif %}>
+                                    {% for value, label in comp_types %}
+                                    <option value="{{ value }}" {% if extracted_info and
+                                        extracted_info.competition_type==value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="organizer">主办单位</label>
+                                <input type="text" class="form-control" id="organizer" name="organizer"
+                                    value="{{ extracted_info.organizer if extracted_info else '' }}" {% if is_quick_upload and not can_edit %}readonly{% endif %}>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="award_date">获奖时间</label>
+                                <input type="date" class="form-control" id="award_date" name="award_date" 
+                                    value="{{ extracted_info.award_date if extracted_info and extracted_info.award_date else '' }}"
+                                    {% if is_quick_upload and not can_edit %}readonly{% endif %} placeholder="请选择">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="advisor_id">指导老师工号 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="advisor_id" name="advisor_id"
+                                    value="{{ extracted_info.advisor_id if extracted_info else '' }}"
+                                    {% if is_quick_upload and not can_edit %}readonly{% endif %} placeholder="8位数字" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="advisor">指导教师 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="advisor" name="advisor"
+                                    value="{{ extracted_info.advisor if extracted_info else '' }}"
+                                    {% if is_quick_upload and not can_edit %}readonly{% endif %} required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    {% if is_quick_upload and not can_edit %}
+                    <div class="alert alert-info mb-2">
+                        <i class="fas fa-info-circle"></i> 该证书已存在且当前状态不可编辑，您可以前往“我的证书”查看详情
+                    </div>
+                    <a href="{{ url_for('my_certs.view', cert_id=existing_cert.cert_id) }}" class="btn btn-info btn-block">
+                        <i class="fas fa-eye"></i> 查看证书详情
+                    </a>
+                    {% else %}
+                    <div class="row">
+                        <div class="col-6">
+                            <button type="submit" name="status" value="draft" class="btn btn-warning btn-block">
+                                <i class="fas fa-save"></i> 保存草稿
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="submit" name="status" value="submitted" class="btn btn-success btn-block">
+                                <i class="fas fa-paper-plane"></i> 提交证书
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+<script>
+    // 显示loading动画
+    function showLoading(text, subtext) {
+        $('#loadingText').text(text || '正在处理中...');
+        $('#loadingSubtext').text(subtext || '请稍候，即将完成');
+        $('#loadingOverlay').css('display', 'flex');
+    }
+
+    // 上传表单提交时显示loading
+    $('#uploadForm').on('submit', function() {
+        showLoading('正在上传文件...', '请稍候，文件正在上传中');
+    });
+
+    // AI识别表单提交时显示loading
+    $('#extractForm').on('submit', function() {
+        showLoading('🤖 AI正在识别证书...', '请稍候，智能识别中，预计需要10-30秒');
+    });
+
+    // 自定义文件输入显示文件名
+    $('.custom-file-input').on('change', function () {
+        var fileName = $(this).val().split('\\').pop();
+        $(this).next('.custom-file-label').addClass("selected").html(fileName);
+    });
+
+    // 初始化 Select2
+    $('.select2').select2({
+        theme: 'bootstrap4',
+        placeholder: '请选择'
+    });
+</script>
+{% endblock %}

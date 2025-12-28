@@ -1,0 +1,146 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}证书数据 - 证书管理系统{% endblock %}
+
+{% block page_title %}证书数据{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="#">证书管理</a></li>
+<li class="breadcrumb-item active">证书数据</li>
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-12">
+        <!-- 证书列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-list"></i> 证书列表</h3>
+                <div class="card-tools">
+                    <button onclick="exportCertificates()" class="btn btn-success btn-sm mr-2">
+                        <i class="fas fa-file-excel"></i> 导出Excel
+                    </button>
+                    <span class="badge badge-info">共 {{ certificates|length }} 条记录</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if certificates %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover datatable" data-manual-init>
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>学号</th>
+                                <th>姓名</th>
+                                <th>竞赛项目</th>
+                                <th>获奖类别</th>
+                                <th>获奖等级</th>
+                                <th>竞赛类型</th>
+                                <th>标准分值</th>
+                                <th>贡献度</th>
+                                <th>状态</th>
+                                <th>提交时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cert in certificates %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ cert.student_id }}</td>
+                                <td>{{ cert.student_name }}</td>
+                                <td>{{ cert.competition_name }}</td>
+                                <td>{{ cert.award_category }}</td>
+                                <td>{{ cert.award_level }}</td>
+                                <td>{{ cert.competition_type }}</td>
+                                <td>
+                                    {% if cert.standard_score %}
+                                    <span class="badge badge-success">{{ cert.standard_score }}</span>
+                                    {% else %}
+                                    <span class="text-muted">未评分</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cert.contribution %}
+                                    <span class="badge badge-info">{{ cert.contribution }}</span>
+                                    {% else %}
+                                    <span class="text-muted">未评估</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cert.status == 'draft' %}
+                                    <span class="badge badge-warning">📝 草稿</span>
+                                    {% elif cert.status == 'pending_teacher' %}
+                                    <span class="badge badge-info">⏳ 待教师审核</span>
+                                    {% elif cert.status == 'pending_admin' %}
+                                    <span class="badge badge-primary">⏳ 待管理员审核</span>
+                                    {% elif cert.status == 'approved' %}
+                                    <span class="badge badge-success">✅ 审核通过</span>
+                                    {% else %}
+                                    <span class="badge badge-secondary">{{ cert.status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ cert.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('student_certs.edit', cert_id=cert.cert_id) }}"
+                                        class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i> 编辑
+                                    </a>
+                                    {# 老师只能通过待教师审核的，管理员和教学秘书可以通过任意非审核通过状态的（教学秘书只能审核本院） #}
+                                    {% if current_user.role in ['admin', 'secretary'] and cert.status != 'approved' %}
+                                        {% if current_user.role == 'secretary' and cert.department == current_user.department %}
+                                        <a href="{{ url_for('student_certs.approve', cert_id=cert.cert_id) }}"
+                                            class="btn btn-sm btn-success"
+                                            onclick="return confirm('确定审核通过该证书吗？');">
+                                            <i class="fas fa-check"></i> 通过
+                                        </a>
+                                        {% elif current_user.role == 'admin' %}
+                                        <a href="{{ url_for('student_certs.approve', cert_id=cert.cert_id) }}"
+                                            class="btn btn-sm btn-success"
+                                            onclick="return confirm('确定审核通过该证书吗？');">
+                                            <i class="fas fa-check"></i> 通过
+                                        </a>
+                                        {% endif %}
+                                    {% elif current_user.role == 'teacher' and cert.status == 'pending_teacher' %}
+                                    <a href="{{ url_for('student_certs.approve', cert_id=cert.cert_id) }}"
+                                        class="btn btn-sm btn-success"
+                                        onclick="return confirm('确定审核通过该证书吗？通过后将转交管理员审核。');">
+                                        <i class="fas fa-check"></i> 通过
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                    <p class="text-muted">暂无需要审核的证书</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+<script>
+    $(function () {
+        $('.datatable').DataTable({
+            "language": {
+                "url": "{{ url_for('static', filename='vendor/i18n/dataTables.zh.json') }}"
+            },
+            "order": [[10, "desc"]],
+            "pageLength": 20
+        });
+    });
+
+    // 导出证书数据
+    function exportCertificates() {
+        window.location.href = '{{ url_for("student_certs.export") }}';
+    }
+</script>
+{% endblock %}

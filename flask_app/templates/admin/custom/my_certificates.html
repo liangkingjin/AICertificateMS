@@ -1,0 +1,167 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}我的证书 - 证书管理系统{% endblock %}
+
+{% block page_title %}我的证书{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="#">证书管理</a></li>
+<li class="breadcrumb-item active">我的证书</li>
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-certificate"></i> 证书列表</h3>
+                <div class="card-tools">
+                    <a href="{{ url_for('cert_upload.index') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> 上传新证书
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if certificates %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover datatable" data-manual-init>
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>竞赛项目</th>
+                                <th>获奖类别</th>
+                                <th>获奖等级</th>
+                                <th>竞赛类型</th>
+                                <th>指导教师</th>
+                                {% if current_user.role not in ['student'] %}
+                                <th>标准分值</th>
+                                <th>贡献度</th>
+                                {% endif %}
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cert in certificates %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ cert.competition_name }}</td>
+                                <td>{{ cert.award_category }}</td>
+                                <td>{{ cert.award_level }}</td>
+                                <td>{{ cert.competition_type }}</td>
+                                <td>{{ cert.advisor }}</td>
+                                {% if current_user.role not in ['student'] %}
+                                <td>
+                                    {% if cert.standard_score %}
+                                    <span class="badge badge-success">{{ cert.standard_score }}</span>
+                                    {% else %}
+                                    <span class="text-muted">未评分</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cert.contribution %}
+                                    <span class="badge badge-info">{{ cert.contribution }}</span>
+                                    {% else %}
+                                    <span class="text-muted">未评估</span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                                <td>
+                                    {% if cert.status == 'draft' %}
+                                    <span class="badge badge-warning">📝 草稿</span>
+                                    {% elif cert.status == 'pending_teacher' %}
+                                    <span class="badge badge-info">⏳ 待教师审核</span>
+                                    {% elif cert.status == 'pending_admin' %}
+                                    <span class="badge badge-primary">⏳ 待管理员审核</span>
+                                    {% elif cert.status == 'approved' %}
+                                    <span class="badge badge-success">✅ 审核通过</span>
+                                    {% else %}
+                                    <span class="badge badge-secondary">{{ cert.status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ cert.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if current_user.role == 'admin' %}
+                                    {# 管理员可以编辑任何状态的证书 #}
+                                    <a href="{{ url_for('my_certs.edit', cert_id=cert.cert_id) }}"
+                                        class="btn btn-sm btn-info">
+                                        <i class="fas fa-edit"></i> 编辑
+                                    </a>
+                                    <form action="{{ url_for('my_certs.delete', cert_id=cert.cert_id) }}" method="post"
+                                        style="display: inline;" onsubmit="return confirm('确定要删除这个证书吗？');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> 删除
+                                        </button>
+                                    </form>
+                                    {% elif current_user.role == 'teacher' and cert.status in ['draft', 'pending_teacher'] %}
+                                    {# 教师可以编辑草稿和待教师审核状态 #}
+                                    <a href="{{ url_for('my_certs.edit', cert_id=cert.cert_id) }}"
+                                        class="btn btn-sm btn-info">
+                                        <i class="fas fa-edit"></i> 编辑
+                                    </a>
+                                    <form action="{{ url_for('my_certs.delete', cert_id=cert.cert_id) }}" method="post"
+                                        style="display: inline;" onsubmit="return confirm('确定要删除这个证书吗？');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> 删除
+                                        </button>
+                                    </form>
+                                    {% elif current_user.role == 'student' and cert.status == 'draft' %}
+                                    {# 学生只能编辑草稿 #}
+                                    <a href="{{ url_for('my_certs.edit', cert_id=cert.cert_id) }}"
+                                        class="btn btn-sm btn-info">
+                                        <i class="fas fa-edit"></i> 编辑
+                                    </a>
+                                    <form action="{{ url_for('my_certs.delete', cert_id=cert.cert_id) }}" method="post"
+                                        style="display: inline;" onsubmit="return confirm('确定要删除这个证书吗？');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> 删除
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <a href="{{ url_for('my_certs.view', cert_id=cert.cert_id) }}"
+                                        class="btn btn-sm btn-secondary">
+                                        <i class="fas fa-eye"></i> 查看
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                    <p class="text-muted">您还没有上传任何证书</p>
+                    <a href="{{ url_for('cert_upload.index') }}" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> 立即上传
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+<script>
+    $(function () {
+        // 根据用户角色动态设置排序列
+        // 学生：9列（不含评分），非学生：11列（含评分）
+        var orderColumn = {% if current_user.role == 'student' %}7{% else %}9{% endif %};
+
+        $('.datatable').DataTable({
+            "language": {
+                "url": "{{ url_for('static', filename='vendor/i18n/dataTables.zh.json') }}"
+            },
+            "order": [[orderColumn, "desc"]],
+            "pageLength": 10
+        });
+    });
+</script>
+{% endblock %}

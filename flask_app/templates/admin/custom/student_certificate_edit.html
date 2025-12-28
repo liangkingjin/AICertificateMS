@@ -1,0 +1,274 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}编辑证书 - 证书管理系统{% endblock %}
+
+{% block page_title %}编辑证书{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="#">证书管理</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('student_certs.index') }}">学生证书审核</a></li>
+<li class="breadcrumb-item active">编辑</li>
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    <!-- 左侧：证书文件预览 -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-image"></i> 证书文件</h3>
+            </div>
+            <div class="card-body text-center">
+                {% if cert.file_path %}
+                    {% if cert.file_path.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp')) %}
+                    <img src="{{ url_for('api.get_certificate_file', cert_id=cert.cert_id) }}"
+                        alt="证书图片" class="img-fluid" style="max-height: 500px;">
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-file-pdf fa-3x"></i>
+                        <p class="mt-2 mb-0">PDF文件</p>
+                        <a href="{{ url_for('api.get_certificate_file', cert_id=cert.cert_id) }}" target="_blank" class="btn btn-sm btn-primary mt-2">
+                            <i class="fas fa-external-link-alt"></i> 打开查看
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                <div class="text-muted">
+                    <i class="fas fa-image fa-3x"></i>
+                    <p class="mt-2 mb-0">暂无证书文件</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 证书基本信息 -->
+        <div class="card card-secondary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-info-circle"></i> 基本信息</h3>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">当前状态</dt>
+                    <dd class="col-sm-8">
+                        {% if cert.status == 'draft' %}
+                        <span class="badge badge-warning">📝 草稿</span>
+                        {% elif cert.status == 'pending_teacher' %}
+                        <span class="badge badge-info">⏳ 待教师审核</span>
+                        {% elif cert.status == 'pending_admin' %}
+                        <span class="badge badge-primary">⏳ 待管理员审核</span>
+                        {% elif cert.status == 'approved' %}
+                        <span class="badge badge-success">✅ 审核通过</span>
+                        {% else %}
+                        <span class="badge badge-secondary">{{ cert.status }}</span>
+                        {% endif %}
+                    </dd>
+                    <dt class="col-sm-4">创建时间</dt>
+                    <dd class="col-sm-8">{{ cert.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：编辑表单 -->
+    <div class="col-md-7">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-edit"></i> 编辑证书信息</h3>
+            </div>
+            <form action="{{ url_for('student_certs.edit', cert_id=cert.cert_id) }}" method="post" id="studentCertificateForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action_status" id="action_status" value="save">
+                <div class="card-body">
+                    <div class="row">
+                        <!-- 学生信息 -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="student_id">学号 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="student_id" name="student_id" 
+                                    value="{{ cert.student_id }}" required {% if not can_edit %}disabled{% endif %}>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="student_name">学生姓名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="student_name" name="student_name" 
+                                    value="{{ cert.student_name }}" required {% if not can_edit %}disabled{% endif %}>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="department">学院 <span class="text-danger">*</span></label>
+                        <select class="form-control select2" id="department" name="department" required {% if not can_edit %}disabled{% endif %}>
+                            {% for value, label in colleges %}
+                            <option value="{{ value }}" {% if cert.department == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="competition_name">竞赛项目 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="competition_name" name="competition_name" 
+                            value="{{ cert.competition_name }}" required {% if not can_edit %}disabled{% endif %}>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="award_category">获奖类别 <span class="text-danger">*</span></label>
+                                <select class="form-control select2" id="award_category" name="award_category" required {% if not can_edit %}disabled{% endif %}>
+                                    {% for value, label in categories %}
+                                    <option value="{{ value }}" {% if cert.award_category == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="award_level">获奖等级 <span class="text-danger">*</span></label>
+                                <select class="form-control select2" id="award_level" name="award_level" required {% if not can_edit %}disabled{% endif %}>
+                                    {% for value, label in levels %}
+                                    <option value="{{ value }}" {% if cert.award_level == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="competition_type">竞赛类型 <span class="text-danger">*</span></label>
+                                <select class="form-control select2" id="competition_type" name="competition_type" required {% if not can_edit %}disabled{% endif %}>
+                                    {% for value, label in comp_types %}
+                                    <option value="{{ value }}" {% if cert.competition_type == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="advisor">指导教师 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="advisor" name="advisor" 
+                                    value="{{ cert.advisor }}" required {% if not can_edit %}disabled{% endif %}>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="advisor_id">指导老师工号 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="advisor_id" name="advisor_id" 
+                                    value="{{ cert.advisor_id or '' }}" required {% if not can_edit %}disabled{% endif %}>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="award_date">获奖时间</label>
+                        <input type="date" class="form-control" id="award_date" name="award_date" 
+                            value="{{ cert.award_date.strftime('%Y-%m-%d') if cert.award_date else '' }}" {% if not can_edit %}disabled{% endif %}>
+                    </div>
+
+                    <hr>
+                    <h5><i class="fas fa-star text-warning"></i> 评分信息</h5>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="standard_score">标准分值</label>
+                                <select class="form-control select2" id="standard_score" name="standard_score" {% if not can_edit %}disabled{% endif %}>
+                                    {% for value, label in standard_scores %}
+                                    <option value="{{ value }}" data-selected="{{ cert.standard_score }}" 
+                                        {% if cert.standard_score and cert.standard_score == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="contribution">贡献值</label>
+                                <select class="form-control select2" id="contribution" name="contribution" {% if not can_edit %}disabled{% endif %}>
+                                    {% for value, label in contributions %}
+                                    <option value="{{ value }}" data-selected="{{ cert.contribution }}"
+                                        {% if cert.contribution and cert.contribution == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    {% if can_edit %}
+                    <div class="row">
+                        <div class="col-4">
+                            <a href="{{ url_for('student_certs.index') }}" class="btn btn-secondary btn-block">
+                                <i class="fas fa-arrow-left"></i> 返回
+                            </a>
+                        </div>
+                        {% if cert.status in ['draft', 'pending_teacher'] %}
+                        <div class="col-4">
+                            <button type="submit" class="btn btn-primary btn-block" onclick="submitForm('submit')">
+                                <i class="fas fa-paper-plane"></i> 提交审核
+                            </button>
+                        </div>
+                        {% endif %}
+                        <div class="col-4">
+                            <button type="submit" class="btn btn-success btn-block" onclick="submitForm('save')">
+                                <i class="fas fa-save"></i> 保存修改
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-lock"></i> 当前状态下您没有编辑权限
+                    </div>
+                    <a href="{{ url_for('student_certs.index') }}" class="btn btn-secondary btn-block mt-2">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+<script>
+    $(document).ready(function() {
+        // Select2 初始化
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            width: '100%'
+        });
+
+        // 手动设置选中值（解决 Select2 不显示已选中值的问题）
+        var standardScore = '{{ cert.standard_score or "" }}';
+        var contribution = '{{ cert.contribution or "" }}';
+
+        // 去掉小数点后的".0"，例如 30.0 -> 30
+        if (standardScore && standardScore.endsWith('.0')) {
+            standardScore = standardScore.slice(0, -2);
+        }
+        if (contribution && contribution.endsWith('.0')) {
+            contribution = contribution.slice(0, -2);
+        }
+
+        if (standardScore) {
+            $('#standard_score').val(standardScore).trigger('change');
+        }
+        if (contribution) {
+            $('#contribution').val(contribution).trigger('change');
+        }
+    });
+
+    // 提交表单前设置操作类型
+    function submitForm(action) {
+        document.getElementById('action_status').value = action;
+        if (action === 'submit') {
+            return confirm('确定提交审核吗？提交后将进入下一审核流程。');
+        }
+        return true;
+    }
+</script>
+{% endblock %}

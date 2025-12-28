@@ -1,0 +1,215 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}查看证书 - 证书管理系统{% endblock %}
+
+{% block page_title %}查看证书{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="#">证书管理</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('my_certs.index') }}">我的证书</a></li>
+<li class="breadcrumb-item active">查看</li>
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    <!-- 左侧：证书文件预览 -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-image"></i> 证书文件</h3>
+            </div>
+            <div class="card-body text-center">
+                {% if cert.file_path %}
+                    {% if cert.file_path.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp')) %}
+                    <img src="{{ url_for('api.get_certificate_file', cert_id=cert.cert_id) }}"
+                        alt="证书图片" class="img-fluid" style="max-height: 500px;">
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-file-pdf fa-3x"></i>
+                        <p class="mt-2 mb-0">PDF文件</p>
+                        <a href="{{ url_for('api.get_certificate_file', cert_id=cert.cert_id) }}" target="_blank" class="btn btn-sm btn-primary mt-2">
+                            <i class="fas fa-external-link-alt"></i> 打开查看
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                <div class="text-muted">
+                    <i class="fas fa-image fa-3x"></i>
+                    <p class="mt-2 mb-0">暂无证书文件</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 证书基本信息 -->
+        <div class="card card-secondary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-info-circle"></i> 基本信息</h3>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">当前状态</dt>
+                    <dd class="col-sm-7">
+                        {% if cert.status == 'draft' %}
+                        <span class="badge badge-warning">📝 草稿</span>
+                        {% elif cert.status == 'pending_teacher' %}
+                        <span class="badge badge-info">⏳ 待教师审核</span>
+                        {% elif cert.status == 'pending_admin' %}
+                        <span class="badge badge-primary">⏳ 待管理员审核</span>
+                        {% elif cert.status == 'approved' %}
+                        <span class="badge badge-success">✅ 审核通过</span>
+                        {% else %}
+                        <span class="badge badge-secondary">{{ cert.status }}</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">创建时间</dt>
+                    <dd class="col-sm-7">{{ cert.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+
+                    {% if current_user.role not in ['student'] %}
+                    <dt class="col-sm-5">标准分值</dt>
+                    <dd class="col-sm-7">
+                        {% if cert.standard_score %}
+                        <span class="badge badge-primary">{{ cert.standard_score }}</span>
+                        {% else %}
+                        <span class="text-muted">未评分</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">贡献度</dt>
+                    <dd class="col-sm-7">
+                        {% if cert.contribution %}
+                        <span class="badge badge-success">{{ cert.contribution }}</span>
+                        {% else %}
+                        <span class="text-muted">未评估</span>
+                        {% endif %}
+                    </dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：证书详情 -->
+    <div class="col-md-7">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-eye"></i> 证书详情</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>学号</label>
+                            <p class="form-control-static bg-light p-2 rounded">{{ cert.student_id or '-' }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>学生姓名</label>
+                            <p class="form-control-static bg-light p-2 rounded">{{ cert.student_name or '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>学院</label>
+                    <p class="form-control-static bg-light p-2 rounded">{{ cert.department or '-' }}</p>
+                </div>
+
+                <div class="form-group">
+                    <label>竞赛项目</label>
+                    <p class="form-control-static bg-light p-2 rounded">{{ cert.competition_name or '-' }}</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>获奖类别</label>
+                            <p class="form-control-static bg-light p-2 rounded">{{ cert.award_category or '-' }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>获奖等级</label>
+                            <p class="form-control-static bg-light p-2 rounded">{{ cert.award_level or '-' }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>竞赛类型</label>
+                            <p class="form-control-static bg-light p-2 rounded">{{ cert.competition_type or '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label>主办单位</label>
+                            <p class="form-control-static bg-light p-2 rounded">{{ cert.organizer or '-' }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>获奖时间</label>
+                            <p class="form-control-static bg-light p-2 rounded">{{ cert.award_date or '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>指导教师</label>
+                            <p class="form-control-static bg-light p-2 rounded">{{ cert.advisor or '-' }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>指导老师工号</label>
+                            <p class="form-control-static bg-light p-2 rounded">{{ cert.advisor_id or '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if current_user.role not in ['student'] %}
+                <hr>
+                <h5><i class="fas fa-star text-warning"></i> 评分信息</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>标准分值</label>
+                            <p class="form-control-static bg-light p-2 rounded">
+                                {% if cert.standard_score %}
+                                <span class="badge badge-primary">{{ cert.standard_score }}</span>
+                                {% else %}
+                                <span class="text-muted">未评分</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>贡献度</label>
+                            <p class="form-control-static bg-light p-2 rounded">
+                                {% if cert.contribution %}
+                                <span class="badge badge-success">{{ cert.contribution }}</span>
+                                {% else %}
+                                <span class="text-muted">未评估</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('my_certs.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回列表
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

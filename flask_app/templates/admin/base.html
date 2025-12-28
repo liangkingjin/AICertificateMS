@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}证书管理系统{% endblock %}</title>
+
+        <!-- Local Static Resources -->
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/fontawesome.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/fontawesome-local.css') }}">
+        <!-- AdminLTE 3 CSS -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/adminlte.min.css') }}">
+        <!-- DataTables -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/dataTables.bootstrap4.min.css') }}">
+        <!-- Select2 -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/select2.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/select2-bootstrap4.min.css') }}">
+
+        <style>
+            .content-wrapper {
+                min-height: calc(100vh - 57px - 55px);
+            }
+
+            .small-box .icon {
+                font-size: 70px;
+            }
+
+            .table-responsive {
+                overflow-x: auto;
+            }
+
+            .nav-sidebar .nav-link {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .brand-link .brand-image {
+                margin-left: .8rem;
+                margin-right: .5rem;
+            }
+
+            .user-panel .info a {
+                color: #c2c7d0;
+            }
+
+            .select2-container--bootstrap4 .select2-selection--single {
+                height: calc(2.25rem + 2px) !important;
+            }
+
+            .card-header .card-title {
+                font-weight: 600;
+            }
+
+            .badge-draft {
+                background-color: #ffc107;
+                color: #212529;
+            }
+
+            .badge-submitted {
+                background-color: #28a745;
+            }
+
+            .file-preview img {
+                max-width: 100%;
+                max-height: 300px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 5px;
+            }
+        </style>
+
+        {% block head_css %}{% endblock %}
+    </head>
+
+    <body class="hold-transition sidebar-mini layout-fixed">
+        <div class="wrapper">
+
+            <!-- Navbar -->
+            <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+                <!-- Left navbar links -->
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                            <i class="fas fa-bars"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item d-none d-sm-inline-block">
+                        <a href="{{ url_for('admin.index') }}" class="nav-link">首页</a>
+                    </li>
+                </ul>
+
+                <!-- Right navbar links -->
+                <ul class="navbar-nav ml-auto">
+                    <!-- Fullscreen -->
+                    <li class="nav-item">
+                        <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </a>
+                    </li>
+
+                    <!-- User Dropdown -->
+                    <li class="nav-item dropdown user-menu">
+                        <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
+                            <i class="fas fa-user-circle nav-icon" style="font-size: 1.5rem;"></i>
+                            <span class="d-none d-md-inline ml-1">{{ current_user.name }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                            <li class="user-header bg-primary">
+                                <p>
+                                    {{ current_user.name }}
+                                    <small>{{ current_user.role_display }} - {{ current_user.department }}</small>
+                                </p>
+                            </li>
+                            <li class="user-body">
+                                <div class="row">
+                                    <div class="col-6 text-center">
+                                        <span class="text-muted">学（工）号</span><br>
+                                        <strong>{{ current_user.account_id }}</strong>
+                                    </div>
+                                    <div class="col-6 text-center">
+                                        <span class="text-muted">邮箱</span><br>
+                                        <small>{{ current_user.email }}</small>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="user-footer">
+                                <a href="{{ url_for('auth.logout') }}" class="btn btn-default btn-flat float-right">
+                                    <i class="fas fa-sign-out-alt"></i> 退出登录
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+            <!-- /.navbar -->
+
+            <!-- Main Sidebar Container -->
+            <aside class="main-sidebar sidebar-dark-primary elevation-4">
+                <!-- Brand Logo -->
+                <a href="{{ url_for('admin.index') }}" class="brand-link">
+                    <i class="fas fa-certificate brand-image elevation-3"
+                        style="font-size: 1.8rem; color: #ffc107; margin-left: 1rem; margin-right: 0.5rem;"></i>
+                    <span class="brand-text font-weight-light">证书管理系统</span>
+                </a>
+
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <!-- Sidebar user panel -->
+                    <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                        <div class="image">
+                            <i class="fas fa-user-circle fa-2x text-light"></i>
+                        </div>
+                        <div class="info">
+                            <a href="#" class="d-block">{{ current_user.name }}</a>
+                            <small class="text-muted">{{ current_user.role_display }}</small>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Menu -->
+                    <nav class="mt-2">
+                        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                            data-accordion="false">
+
+                            <!-- 仪表盘 -->
+                            <li class="nav-item">
+                                <a href="{{ url_for('admin.index') }}"
+                                    class="nav-link {% if request.endpoint == 'admin.index' %}active{% endif %}">
+                                    <i class="nav-icon fas fa-tachometer-alt"></i>
+                                    <p>仪表盘</p>
+                                </a>
+                            </li>
+
+                            <!-- 证书管理 -->
+                            <li
+                                class="nav-item has-treeview {% if 'cert' in request.endpoint or 'my_certs' in request.endpoint %}menu-open{% endif %}">
+                                <a href="#"
+                                    class="nav-link {% if 'cert' in request.endpoint or 'my_certs' in request.endpoint %}active{% endif %}">
+                                    <i class="nav-icon fas fa-award"></i>
+                                    <p>
+                                        证书管理
+                                        <i class="right fas fa-angle-left"></i>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ url_for('cert_upload.index') }}"
+                                            class="nav-link {% if request.endpoint == 'cert_upload.index' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>上传证书</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ url_for('my_certs.index') }}"
+                                            class="nav-link {% if 'my_certs' in request.endpoint %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>我的证书</p>
+                                        </a>
+                                    </li>
+                                    {% if current_user.role in ['teacher', 'admin', 'secretary'] %}
+                                    <li class="nav-item">
+                                        <a href="{{ url_for('student_certs.index') }}"
+                                            class="nav-link {% if 'student_certs' in request.endpoint %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>证书数据</p>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+
+                            {% if current_user.role == 'admin' %}
+                            <!-- 用户管理 -->
+                            <li class="nav-item has-treeview {% if 'user' in request.endpoint %}menu-open{% endif %}">
+                                <a href="#" class="nav-link {% if 'user' in request.endpoint %}active{% endif %}">
+                                    <i class="nav-icon fas fa-users"></i>
+                                    <p>
+                                        用户管理
+                                        <i class="right fas fa-angle-left"></i>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ url_for('user_admin.index_view') }}"
+                                            class="nav-link {% if request.endpoint == 'user_admin.index_view' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>用户列表</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ url_for('user_import.index') }}"
+                                            class="nav-link {% if request.endpoint == 'user_import.index' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>批量导入</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- 系统设置 -->
+                            <li
+                                class="nav-item has-treeview {% if 'dict' in request.endpoint or 'config' in request.endpoint or 'apikey' in request.endpoint or 'file' in request.endpoint %}menu-open{% endif %}">
+                                <a href="#"
+                                    class="nav-link {% if 'dict' in request.endpoint or 'config' in request.endpoint or 'apikey' in request.endpoint %}active{% endif %}">
+                                    <i class="nav-icon fas fa-cog"></i>
+                                    <p>
+                                        系统设置
+                                        <i class="right fas fa-angle-left"></i>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ url_for('dict_admin.index_view') }}"
+                                            class="nav-link {% if 'dict_admin' in request.endpoint %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>字典管理</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ url_for('config_admin.index_view') }}"
+                                            class="nav-link {% if 'config_admin' in request.endpoint %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>系统配置</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ url_for('apikey_admin.index_view') }}"
+                                            class="nav-link {% if 'apikey_admin' in request.endpoint %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>API密钥</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ url_for('file_admin.index_view') }}"
+                                            class="nav-link {% if 'file_admin' in request.endpoint %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>文件管理</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            {% endif %}
+
+                            {% if current_user.role in ['teacher', 'admin', 'secretary'] %}
+                            <!-- 数据分析 -->
+                            <li class="nav-item">
+                                <a href="{{ url_for('statistics.index') }}"
+                                    class="nav-link {% if 'statistics' in request.endpoint %}active{% endif %}">
+                                    <i class="nav-icon fas fa-chart-bar"></i>
+                                    <p>统计报表</p>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            <!-- 退出登录 -->
+                            <li class="nav-item">
+                                <a href="{{ url_for('auth.logout') }}" class="nav-link">
+                                    <i class="nav-icon fas fa-sign-out-alt"></i>
+                                    <p>退出登录</p>
+                                </a>
+                            </li>
+
+                        </ul>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Content Wrapper -->
+            <div class="content-wrapper">
+                <!-- Content Header (Page header) -->
+                <div class="content-header">
+                    <div class="container-fluid">
+                        <div class="row mb-2">
+                            <div class="col-sm-6">
+                                <h1 class="m-0">{% block page_title %}{% endblock %}</h1>
+                            </div>
+                            <div class="col-sm-6">
+                                <ol class="breadcrumb float-sm-right">
+                                    <li class="breadcrumb-item"><a href="{{ url_for('admin.index') }}">首页</a></li>
+                                    {% block breadcrumb %}{% endblock %}
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main content -->
+                <section class="content">
+                    <div class="container-fluid">
+                        <!-- Flash Messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                        {% for category, message in messages %}
+                        <div
+                            class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            {% if category == 'success' %}<i class="icon fas fa-check"></i>{% endif %}
+                            {% if category == 'warning' %}<i class="icon fas fa-exclamation-triangle"></i>{% endif %}
+                            {% if category == 'danger' or category == 'error' %}<i class="icon fas fa-ban"></i>{% endif
+                            %}
+                            {% if category == 'info' %}<i class="icon fas fa-info"></i>{% endif %}
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        {% endwith %}
+
+                        {% block body %}{% endblock %}
+                    </div>
+                </section>
+            </div>
+
+            <!-- Footer -->
+            <footer class="main-footer">
+                <strong>&copy; 2025 竞赛证书智能识别与信息管理平台</strong>
+                <div class="float-right d-none d-sm-inline-block">
+                    <b>Version</b> 2.0 Flask-Admin
+                </div>
+            </footer>
+
+        </div>
+        <!-- ./wrapper -->
+
+        <!-- Local Static Resources -->
+        <!-- jQuery -->
+        <script src="{{ url_for('static', filename='vendor/js/jquery.min.js') }}"></script>
+        <!-- Bootstrap 4 -->
+        <script src="{{ url_for('static', filename='vendor/js/bootstrap.bundle.min.js') }}"></script>
+        <!-- AdminLTE App -->
+        <script src="{{ url_for('static', filename='vendor/js/adminlte.min.js') }}"></script>
+        <!-- DataTables -->
+        <script src="{{ url_for('static', filename='vendor/js/jquery.dataTables.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='vendor/js/dataTables.bootstrap4.min.js') }}"></script>
+        <!-- Select2 -->
+        <script src="{{ url_for('static', filename='vendor/js/select2.min.js') }}"></script>
+        <!-- Chart.js -->
+        <script src="{{ url_for('static', filename='vendor/js/chart.umd.min.js') }}"></script>
+
+        <script>
+            $(function () {
+                // 初始化 Select2
+                $('.select2').select2({
+                    theme: 'bootstrap4'
+                });
+
+                // 初始化 DataTables (只初始化没有 data-manual-init 属性的表格)
+                $('.datatable').not('[data-manual-init]').each(function () {
+                    $(this).DataTable({
+                        "language": {
+                            "url": "{{ url_for('static', filename='vendor/i18n/dataTables.zh.json') }}"
+                        },
+                        "responsive": true,
+                        "lengthChange": true,
+                        "autoWidth": false
+                    });
+                });
+            });
+        </script>
+
+        <!-- Flask-Admin 中文汉化 -->
+        <script>
+            $(document).ready(function() {
+                // 延迟执行确保DOM完全加载
+                setTimeout(function() {
+                    // 导航栏按钮汉化
+                    $('.nav-tabs a, .nav-link, .btn').each(function() {
+                        var text = $(this).text().trim();
+                        var translations = {
+                            'List': '列表',
+                            'Create': '新建',
+                            'With selected': '批量操作',
+                            'Search': '搜索',
+                            'Apply': '应用',
+                            'Reset': '重置',
+                            'Export': '导出',
+                            'Edit': '编辑',
+                            'Delete': '删除',
+                            'Save': '保存',
+                            'Cancel': '取消',
+                            'Save and Add Another': '保存并继续添加',
+                            'Save and Continue Editing': '保存并继续编辑'
+                        };
+                        
+                        // 匹配并替换（保留括号内数字）
+                        for (var eng in translations) {
+                            if (text.indexOf(eng) === 0) {
+                                var rest = text.substring(eng.length);
+                                $(this).html($(this).html().replace(eng, translations[eng]));
+                                break;
+                            }
+                        }
+                    });
+                    
+                    // 下拉菜单项汉化
+                    $('.dropdown-item, .dropdown-menu a').each(function() {
+                        var text = $(this).text().trim();
+                        var dropdownTranslations = {
+                            'items': '条',
+                            'Delete': '删除',
+                            'Export / Export': '导出'
+                        };
+                        for (var eng in dropdownTranslations) {
+                            if (text.indexOf(eng) !== -1) {
+                                $(this).html($(this).html().replace(eng, dropdownTranslations[eng]));
+                            }
+                        }
+                    });
+                    
+                    // "X items" 的汉化 (更全面的选择器)
+                    $('button, .btn, .dropdown-toggle, .dropdown-item').each(function() {
+                        var html = $(this).html();
+                        if (html && html.match(/\d+\s*items/)) {
+                            html = html.replace(/(\d+)\s*items/g, '$1 条');
+                            $(this).html(html);
+                        }
+                    });
+                }, 100);
+            });
+        </script>
+
+        <!-- 确认模态框 -->
+        <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmModalLabel">确认操作</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="confirmModalBody">
+                        确定要执行此操作吗？
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-danger" id="confirmModalConfirm">确定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示模态框 -->
+        <div class="modal fade" id="alertModal" tabindex="-1" role="dialog" aria-labelledby="alertModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="alertModalLabel">提示信息</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="alertModalBody">
+                        操作完成。
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">确定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 自定义弹窗JavaScript函数 -->
+        <script>
+            // 全局变量存储确认操作的回调函数
+            let confirmCallback = null;
+
+            // 显示确认模态框
+            function showConfirmModal(message, callback, confirmBtnClass = 'btn-danger', confirmBtnText = '确定') {
+                $('#confirmModalBody').text(message);
+                $('#confirmModalConfirm').removeClass('btn-danger btn-success btn-primary').addClass(confirmBtnClass);
+                $('#confirmModalConfirm').text(confirmBtnText);
+                confirmCallback = callback;
+                $('#confirmModal').modal('show');
+            }
+
+            // 显示提示模态框
+            function showAlertModal(message, title = '提示信息') {
+                $('#alertModalLabel').text(title);
+                $('#alertModalBody').text(message);
+                $('#alertModal').modal('show');
+            }
+
+            // 确认模态框的确认按钮点击事件
+            $('#confirmModalConfirm').on('click', function() {
+                if (typeof confirmCallback === 'function') {
+                    confirmCallback();
+                    confirmCallback = null;
+                }
+                $('#confirmModal').modal('hide');
+            });
+
+            // 初始化时替换表单的onsubmit确认事件
+            $(document).ready(function() {
+                // 处理删除按钮的确认事件
+                $('form[onsubmit*="confirm("]').each(function() {
+                    const $form = $(this);
+                    const onsubmitAttr = $form.attr('onsubmit');
+                    // 提取确认消息
+                    const messageMatch = onsubmitAttr.match(/confirm\('([^']*)'\)/);
+                    if (messageMatch) {
+                        const message = messageMatch[1];
+                        // 移除原生onsubmit事件
+                        $form.attr('onsubmit', 'return false;');
+                        // 添加点击事件
+                        $form.find('input[type="submit"], button[type="submit"]').on('click', function(e) {
+                            e.preventDefault();
+                            showConfirmModal(message, function() {
+                                // 确认后提交表单
+                                $form[0].submit();
+                            });
+                        });
+                    }
+                });
+
+                // 处理onclick事件中的confirm
+                $('[onclick*="confirm("]').each(function() {
+                    const $element = $(this);
+                    const onclickAttr = $element.attr('onclick');
+                    // 提取确认消息
+                    const messageMatch = onclickAttr.match(/confirm\('([^']*)'\)/);
+                    if (messageMatch) {
+                        const message = messageMatch[1];
+                        // 提取跳转链接
+                        const hrefMatch = onclickAttr.match(/window\.location\.href\s*=\s*['"]([^'"]*)['"]/);
+                        const locationMatch = onclickAttr.match(/location\.href\s*=\s*['"]([^'"]*)['"]/);
+                        const href = hrefMatch ? hrefMatch[1] : (locationMatch ? locationMatch[1] : null);
+                        
+                        // 检查是否是提交按钮
+                        const isSubmitButton = $element.attr('type') === 'submit';
+                        // 检查是否有表单元素
+                        const $form = $element.closest('form');
+                        const hasForm = $form.length > 0;
+                        
+                        if (href) {
+                            // 移除原生onclick事件
+                            $element.attr('onclick', 'return false;');
+                            // 添加点击事件
+                            $element.on('click', function(e) {
+                                e.preventDefault();
+                                showConfirmModal(message, function() {
+                                    // 确认后跳转
+                                    window.location.href = href;
+                                });
+                            });
+                        } else if (isSubmitButton && hasForm) {
+                            // 移除原生onclick事件
+                            $element.attr('onclick', 'return false;');
+                            // 添加点击事件
+                            $element.on('click', function(e) {
+                                e.preventDefault();
+                                showConfirmModal(message, function() {
+                                    // 确认后提交表单
+                                    $form[0].submit();
+                                }, 'btn-primary'); // 使用蓝色按钮
+                            });
+                        }
+                    }
+                });
+            });
+        </script>
+
+        {% block tail_js %}{% endblock %}
+    </body>
+
+</html>

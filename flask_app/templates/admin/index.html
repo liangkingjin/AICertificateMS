@@ -1,0 +1,478 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}仪表盘 - 证书管理系统{% endblock %}
+
+{% block page_title %}仪表盘{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">仪表盘</li>
+{% endblock %}
+
+{% block body %}
+<!-- 欢迎信息 -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="callout callout-info">
+            <h5><i class="fas fa-info"></i> 欢迎使用证书管理系统</h5>
+            <p>您好，<strong>{{ current_user.name }}</strong>！您当前的角色是 <span
+                    class="badge badge-primary">{{ current_user.role_display }}</span></p>
+        </div>
+    </div>
+</div>
+
+{% if current_user.role == 'admin' %}
+<!-- 管理员视图 - 概览卡片 -->
+<div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ stats.total_users }}</h3>
+                <p>总用户数</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <a href="{{ url_for('user_admin.index_view') }}" class="small-box-footer">
+                查看详情 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ stats.total_certificates }}</h3>
+                <p>总证书数</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-award"></i>
+            </div>
+            <a href="{{ url_for('student_certs.index') }}" class="small-box-footer">
+                查看详情 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ stats.pending_certificates|default(0) }}</h3>
+                <p>待审核证书</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <a href="{{ url_for('statistics.index') }}" class="small-box-footer">
+                统计报表 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>{{ stats.draft_certificates }}</h3>
+                <p>草稿证书</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-edit"></i>
+            </div>
+            <a href="#" class="small-box-footer">
+                <i class="fas fa-info-circle"></i> 待提交
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 用户统计 -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="info-box bg-gradient-info">
+            <span class="info-box-icon"><i class="fas fa-user-graduate"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">学生用户</span>
+                <span class="info-box-number">{{ stats.total_students }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box bg-gradient-success">
+            <span class="info-box-icon"><i class="fas fa-chalkboard-teacher"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">教师用户</span>
+                <span class="info-box-number">{{ stats.total_teachers }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box bg-gradient-secondary">
+            <span class="info-box-icon"><i class="fas fa-user-tie"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">教学秘书</span>
+                <span class="info-box-number">{{ stats.total_secretaries|default(0) }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box bg-gradient-warning">
+            <span class="info-box-icon"><i class="fas fa-user-shield"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">管理员</span>
+                <span class="info-box-number">{{ stats.total_admins }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif current_user.role == 'teacher' %}
+<!-- 教师视图 -->
+<div class="row">
+    <div class="col-lg-4 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ stats.guided_certs|default(0) }}</h3>
+                <p>指导学生证书</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <a href="{{ url_for('student_certs.index') }}" class="small-box-footer">
+                查看详情 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-4 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ stats.total_certificates }}</h3>
+                <p>系统总证书</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-award"></i>
+            </div>
+            <a href="{{ url_for('statistics.index') }}" class="small-box-footer">
+                统计报表 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-4 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3><i class="fas fa-upload"></i></h3>
+                <p>上传证书</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <a href="{{ url_for('cert_upload.index') }}" class="small-box-footer">
+                立即上传 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+{% elif current_user.role == 'secretary' %}
+<!-- 教学秘书视图 -->
+<div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ stats.dept_certs|default(0) }}</h3>
+                <p>本院证书总数</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-certificate"></i>
+            </div>
+            <a href="{{ url_for('student_certs.index') }}" class="small-box-footer">
+                查看详情 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ stats.dept_pending|default(0) }}</h3>
+                <p>待审核证书</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <a href="{{ url_for('student_certs.index') }}" class="small-box-footer">
+                立即审核 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3><i class="fas fa-chart-pie"></i></h3>
+                <p>统计报表</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <a href="{{ url_for('statistics.index') }}" class="small-box-footer">
+                查看报表 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-primary">
+            <div class="inner">
+                <h3><i class="fas fa-upload"></i></h3>
+                <p>上传证书</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <a href="{{ url_for('cert_upload.index') }}" class="small-box-footer">
+                立即上传 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+<div class="alert alert-info mt-3">
+    <i class="fas fa-building"></i> 您当前管理的学院：<strong>{{ stats.my_department|default('未设置') }}</strong>
+</div>
+
+{% else %}
+<!-- 学生视图 -->
+<div class="row">
+    <div class="col-lg-4 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ stats.my_certs|default(0) }}</h3>
+                <p>我的证书</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-certificate"></i>
+            </div>
+            <a href="{{ url_for('my_certs.index') }}" class="small-box-footer">
+                查看详情 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-4 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ stats.my_submitted|default(0) }}</h3>
+                <p>已提交</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <a href="{{ url_for('my_certs.index') }}" class="small-box-footer">
+                查看详情 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-4 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ stats.my_draft|default(0) }}</h3>
+                <p>草稿</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-edit"></i>
+            </div>
+            <a href="{{ url_for('my_certs.index') }}" class="small-box-footer">
+                继续编辑 <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-bolt"></i> 快速操作</h3>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('cert_upload.index') }}" class="btn btn-lg btn-success mr-2">
+                    <i class="fas fa-upload"></i> 上传新证书
+                </a>
+                <a href="{{ url_for('my_certs.index') }}" class="btn btn-lg btn-info">
+                    <i class="fas fa-list"></i> 查看我的证书
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if current_user.role in ['teacher', 'admin'] %}
+<!-- 图表区域 -->
+<div class="row">
+    <!-- 按学院分布 -->
+    <div class="col-md-6">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-pie mr-1"></i>
+                    按学院分布
+                </h3>
+            </div>
+            <div class="card-body">
+                <canvas id="deptChart" style="min-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 按获奖类别分布 -->
+    <div class="col-md-6">
+        <div class="card card-success">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-bar mr-1"></i>
+                    按获奖类别分布
+                </h3>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" style="min-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 按获奖等级分布 -->
+    <div class="col-md-6">
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-bar mr-1"></i>
+                    按获奖等级分布
+                </h3>
+            </div>
+            <div class="card-body">
+                <canvas id="levelChart" style="min-height: 250px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 按竞赛类型分布 -->
+    <div class="col-md-6">
+        <div class="card card-warning">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-pie mr-1"></i>
+                    按竞赛类型分布
+                </h3>
+            </div>
+            <div class="card-body">
+                <canvas id="typeChart" style="min-height: 250px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block tail_js %}
+{% if current_user.role in ['teacher', 'admin'] %}
+<script>
+    // 颜色配置
+    const colors = [
+        '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8',
+        '#6f42c1', '#fd7e14', '#20c997', '#e83e8c', '#6c757d',
+        '#343a40', '#f8f9fa'
+    ];
+
+    // 学院分布饼图
+    const deptData = {{ dept_stats | tojson }};
+    if (deptData && deptData.length > 0) {
+        new Chart(document.getElementById('deptChart'), {
+            type: 'doughnut',
+            data: {
+                labels: deptData.map(d => d.name ? d.name.substring(0, 15) : '未知'),
+                datasets: [{
+                    data: deptData.map(d => d.count),
+                    backgroundColor: colors.slice(0, deptData.length)
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 12,
+                            font: { size: 11 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 获奖类别柱状图
+    const categoryData = {{ category_stats | tojson }};
+    if (categoryData && categoryData.length > 0) {
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'bar',
+            data: {
+                labels: categoryData.map(d => d.name || '未知'),
+                datasets: [{
+                    label: '证书数量',
+                    data: categoryData.map(d => d.count),
+                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    // 获奖等级柱状图
+    const levelData = {{ level_stats | tojson }};
+    if (levelData && levelData.length > 0) {
+        new Chart(document.getElementById('levelChart'), {
+            type: 'bar',
+            data: {
+                labels: levelData.map(d => d.name || '未知'),
+                datasets: [{
+                    label: '证书数量',
+                    data: levelData.map(d => d.count),
+                    backgroundColor: '#17a2b8'
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // 竞赛类型饼图
+    const typeData = {{ type_stats | tojson }};
+    if (typeData && typeData.length > 0) {
+        new Chart(document.getElementById('typeChart'), {
+            type: 'pie',
+            data: {
+                labels: typeData.map(d => d.name || '未知'),
+                datasets: [{
+                    data: typeData.map(d => d.count),
+                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+</script>
+{% endif %}
+{% endblock %}

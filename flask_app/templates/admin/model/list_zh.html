@@ -1,0 +1,73 @@
+{% extends 'admin/model/list.html' %}
+
+{# Flask-Admin 列表页中文汉化 #}
+
+{% block tail %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    function translateFlaskAdmin() {
+        var translations = {
+            'List': '列表',
+            'Create': '新建',
+            'Add Filter': '添加筛选',
+            'With selected': '批量操作',
+            'Search': '搜索',
+            'Apply': '应用',
+            'Reset': '重置',
+            'Reset Filters': '重置筛选',
+            'Export': '导出',
+            'Edit': '编辑',
+            'Delete': '删除',
+            'Save': '保存',
+            'Cancel': '取消',
+            'Yes': '是',
+            'No': '否',
+            'None': '无',
+            'True': '是',
+            'False': '否',
+            'items': '条',
+            'equals': '等于',
+            'not equal': '不等于',
+            'contains': '包含',
+            'not contains': '不包含',
+            'empty': '为空',
+            'not empty': '不为空',
+            'in list': '在列表中',
+            'not in list': '不在列表中',
+            'greater than': '大于',
+            'smaller than': '小于',
+            'between': '介于',
+            'not between': '不介于'
+        };
+        
+        $('a, button, .btn, .nav-link, .dropdown-item, .dropdown-toggle').each(function() {
+            var $el = $(this);
+            var html = $el.html();
+            if (html) {
+                var changed = false;
+                for (var eng in translations) {
+                    if (html.indexOf(eng) !== -1) {
+                        html = html.split(eng).join(translations[eng]);
+                        changed = true;
+                    }
+                }
+                if (changed) $el.html(html);
+            }
+        });
+        
+        $('button, .btn, .dropdown-toggle').each(function() {
+            var $el = $(this);
+            var html = $el.html();
+            if (html && html.match(/\d+\s*items/)) {
+                $el.html(html.replace(/(\d+)\s*items/g, '$1 条'));
+            }
+        });
+    }
+    
+    setTimeout(translateFlaskAdmin, 50);
+    setTimeout(translateFlaskAdmin, 200);
+    setTimeout(translateFlaskAdmin, 500);
+});
+</script>
+{% endblock %}
